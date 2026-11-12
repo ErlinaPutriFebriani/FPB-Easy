@@ -31,7 +31,7 @@ Keterangan: [x] = kode sudah dibuat · [ ] = belum / perlu dilakukan Erlina
 - [x] `GET /api/fpb` + `tests/test_api.py`
 - [x] `public/js/fpb.js` (cerminan) + `tests/fpb.test.mjs` / `tests/fpb.test.html`
 - [x] Halaman Kalkulator: 2–3 bilangan, langkah bertahap / semua, pewarnaan, cadangan offline
-- [ ] Jalankan `pytest` dan `node tests/fpb.test.mjs`, pastikan semua lulus
+- [x] Jalankan `pytest` (52 lulus) dan `node tests/fpb.test.mjs` (27 lulus)
 
 ## Tahap 4: Materi
 - [x] Halaman Materi dari `/api/materi`: satu kartu per layar, Kembali/Lanjut, indikator titik, contoh visual

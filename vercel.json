@@ -3,12 +3,10 @@
   "outputDirectory": "public",
   "functions": {
     "api/index.py": {
-      "includeFiles": "api/**"
+      "includeFiles": "api/data/**",
+      "maxDuration": 10
     }
   },
-  "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/index" }
-  ],
   "headers": [
     {
       "source": "/service-worker.js",

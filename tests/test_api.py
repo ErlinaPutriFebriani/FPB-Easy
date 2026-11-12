@@ -16,7 +16,56 @@ def klien():
 def test_ping(klien):
     res = klien.get("/api/ping")
     assert res.status_code == 200
-    assert res.get_json() == {"ok": True, "mode": "lokal"}
+    assert res.get_json() == {"ok": True, "mode": "lokal", "database": "lokal"}
+
+
+def test_semua_rute_api_terdaftar_dengan_path_asli():
+    """Vercel meneruskan path asli (/api/materi dst.) ke Flask, jadi rute ini harus ada apa adanya."""
+    rute = {r.rule for r in app.url_map.iter_rules()}
+    for path in ["/api/ping", "/api/fpb", "/api/materi", "/api/contoh", "/api/soal", "/api/periksa",
+                 "/api/petunjuk", "/api/pembahasan", "/api/uji", "/api/uji/nilai", "/api/hasil"]:
+        assert path in rute
+
+
+def test_vercel_json_tanpa_rewrite_api():
+    """Rewrite /api/(.*) -> /api/index membuat semua API 404 di Vercel (mode Flask)."""
+    import json
+    from pathlib import Path
+
+    konfigurasi = json.loads((Path(__file__).resolve().parent.parent / "vercel.json").read_text("utf-8"))
+    assert konfigurasi["outputDirectory"] == "public"
+    for r in konfigurasi.get("rewrites", []):
+        assert not r["source"].startswith("/api")
+
+
+def test_database_gagal_jadi_503(klien, monkeypatch):
+    def gagal():
+        raise db.GagalDatabase()
+
+    monkeypatch.setattr(db, "ambil_materi", gagal)
+    res = klien.get("/api/materi")
+    assert res.status_code == 503
+    assert "Coba lagi" in res.get_json()["pesan"]
+
+
+def test_supabase_gagal_klien_direset(monkeypatch):
+    class KlienRusak:
+        def table(self, _nama):
+            raise ConnectionError("jaringan putus")
+
+    monkeypatch.setenv("SUPABASE_URL", "https://contoh.supabase.co")
+    monkeypatch.setenv("SUPABASE_SERVICE_KEY", "kunci-palsu")
+    monkeypatch.setattr(db, "_klien", KlienRusak())
+    assert db.cek_koneksi() == "gagal"
+    assert db._klien is None
+
+
+def test_path_halaman_tanpa_index_html_bukan_500(klien, monkeypatch, tmp_path):
+    import index
+
+    monkeypatch.setattr(index, "FOLDER_PUBLIC", tmp_path)  # meniru Vercel: public/ tidak dibundel
+    res = klien.get("/ping")
+    assert res.status_code == 404
 
 
 def test_fpb(klien):

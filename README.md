@@ -72,10 +72,13 @@ Tanpa Node.js: jalankan `python -m http.server 8000` di folder proyek, lalu buka
 
 1. Unggah proyek ke GitHub (repo baru → upload, atau `git push`).
 2. Buka <https://vercel.com> → login dengan GitHub → **Add New → Project** → pilih repo.
-3. Framework Preset: **Other**. Pengaturan lain biarkan bawaan (`vercel.json` sudah mengatur semuanya).
-4. Buka **Environment Variables** → tambahkan `SUPABASE_URL` dan `SUPABASE_SERVICE_KEY`.
-5. Klik **Deploy**. Hasilnya berupa tautan, misalnya `https://fpb-easy.vercel.app`.
-6. Periksa dengan membuka `https://<tautan>/api/ping`. Respons harus `{"ok": true, "mode": "supabase"}`.
+3. Pengaturan build biarkan bawaan. Vercel mengenali aplikasi Flask di `api/index.py`, dan `vercel.json` sudah mengatur folder `public/`.
+4. Buka **Environment Variables** → tambahkan `SUPABASE_URL` dan `SUPABASE_SERVICE_KEY` (centang Production dan Preview). Nilainya sama dengan isi `.env` di laptop, tanpa tanda kutip atau spasi.
+5. Klik **Deploy**. Hasilnya berupa tautan, misalnya `https://fpb-easy.vercel.app`. Jika env baru diisi atau diubah setelah deploy, buka **Deployments → ⋯ → Redeploy**.
+6. Periksa dengan membuka `https://<tautan>/api/ping`. Respons harus `{"ok": true, "mode": "supabase", "database": "terhubung"}`.
+   - `"mode": "lokal"` → env belum terbaca. Isi env, lalu Redeploy.
+   - `"database": "gagal"` → kunci/URL salah atau proyek Supabase sedang dijeda. Buka dasbor Supabase, lalu cek log di Vercel (tab **Logs**).
+   - `"Alamat API tidak ditemukan"` → jangan menambahkan `rewrites` untuk `/api/...` di `vercel.json`. Vercel sudah meneruskan path aslinya ke Flask.
 
 ---
 

@@ -26,6 +26,11 @@ app = Flask(__name__, static_folder=str(FOLDER_PUBLIC), static_url_path="")
 app.json.ensure_ascii = False
 app.json.sort_keys = False
 
+# Catatan Vercel: proyek ini dijalankan Vercel sebagai aplikasi Flask. Setiap request yang bukan
+# file statis di public/ diteruskan ke app ini DENGAN PATH ASLINYA (mis. /api/materi).
+# Karena itu vercel.json TIDAK boleh berisi rewrite "/api/(.*)" -> "/api/index": rewrite itu
+# mengubah semua path menjadi /api/index sehingga setiap API menjawab "tidak ditemukan".
+
 POLA_UUID = re.compile(r"^[0-9a-fA-F-]{36}$")
 POLA_KODE = re.compile(r"^[A-Za-z0-9_-]{1,20}$")
 MAKS_BARIS_HASIL = 100
@@ -41,6 +46,11 @@ def tangani_input_salah(err):
     return jsonify({"pesan": str(err)}), 400
 
 
+@app.errorhandler(db.GagalDatabase)
+def tangani_gagal_database(err):
+    return jsonify({"pesan": str(err)}), 503
+
+
 @app.errorhandler(404)
 def tidak_ditemukan(_err):
     if request.path.startswith("/api/"):
@@ -48,7 +58,10 @@ def tidak_ditemukan(_err):
     if "." in request.path.rsplit("/", 1)[-1]:
         return "File tidak ditemukan", 404
     # Router frontend memakai hash (#/...), jadi path halaman lain diarahkan ke index.html.
-    return send_from_directory(FOLDER_PUBLIC, "index.html")
+    # Di Vercel, public/ disajikan CDN dan tidak ikut dibundel ke function -> balas 404 biasa.
+    if (FOLDER_PUBLIC / "index.html").is_file():
+        return send_from_directory(FOLDER_PUBLIC, "index.html")
+    return jsonify({"pesan": "Halaman tidak ditemukan."}), 404
 
 
 @app.errorhandler(500)
@@ -110,7 +123,12 @@ def beranda():
 
 @app.get("/api/ping")
 def ping():
-    return jsonify({"ok": True, "mode": "supabase" if db.mode_supabase() else "lokal"})
+    """Cek cepat setelah deploy: apakah API hidup dan database tersambung."""
+    return jsonify({
+        "ok": True,
+        "mode": "supabase" if db.mode_supabase() else "lokal",
+        "database": db.cek_koneksi(),
+    })
 
 
 @app.get("/api/fpb")
