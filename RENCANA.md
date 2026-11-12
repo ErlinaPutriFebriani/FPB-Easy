@@ -11,7 +11,7 @@ Keterangan: [x] = kode sudah dibuat · [ ] = belum / perlu dilakukan Erlina
 - [x] `public/index.html`, `css/style.css`
 - [x] `public/js/app.js`: router hash + Beranda dengan 5 menu
 - [x] `manifest.json`, ikon 192/512/maskable/apple, `service-worker.js`
-- [ ] Repo GitHub + deploy pertama ke Vercel
+- [x] Repo GitHub + deploy ke Vercel (https://fpb-easy.vercel.app, /api/ping: database terhubung)
 
 **Selesai jika:** tautan Vercel dapat dibuka di HP, `/api/ping` merespons, dan Lighthouse menyatakan aplikasi "Installable".
 
@@ -20,8 +20,8 @@ Keterangan: [x] = kode sudah dibuat · [ ] = belum / perlu dilakukan Erlina
 - [x] `api/data/konten.json`: 6 kartu materi, 3 contoh, 9 soal latihan (3 level × fading A/B/C), 4 soal khusus uji
 - [x] `supabase/seed.sql` (dibuat dari konten.json oleh `scripts/buat_seed_sql.py`)
 - [x] `api/db.py`: Supabase jika env diisi, mode lokal jika kosong
-- [ ] Buat proyek Supabase, jalankan schema.sql + seed.sql
-- [ ] Isi Environment Variables di `.env` (laptop) dan di Vercel
+- [x] Buat proyek Supabase, jalankan schema.sql + seed.sql
+- [x] Isi Environment Variables di `.env` (laptop) dan di Vercel
 
 **Selesai jika:** `GET /api/ping` mengembalikan `"mode": "supabase"`.
 
