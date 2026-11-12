@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Uji fpb.js</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 640px; margin: 24px auto; padding: 0 16px; background: #fff; color: #1f2937; }
+    .lulus { color: #15803d; } .gagal { color: #b91c1c; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h1>Uji public/js/fpb.js</h1>
+  <p>Buka lewat server dari folder proyek, misalnya <code>python -m http.server 8000</code>,
+     lalu <code>http://localhost:8000/tests/fpb.test.html</code>.</p>
+  <ul id="hasil"></ul>
+  <p id="ringkas"></p>
+  <script type="module">
+    import * as f from '../public/js/fpb.js';
+
+    const hasil = document.getElementById('hasil');
+    let lulus = 0, gagal = 0;
+    const sama = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+    function uji(nama, ok) {
+      const li = document.createElement('li');
+      li.className = ok ? 'lulus' : 'gagal';
+      li.textContent = `${ok ? '✓' : '✗'} ${nama}`;
+      hasil.appendChild(li);
+      ok ? lulus++ : gagal++;
+    }
+
+    const kasus = await (await fetch('./kasus_fpb.json')).json();
+    for (const k of kasus.faktor) uji(`faktor(${k.n})`, sama(f.faktor(k.n), k.faktor));
+    for (const k of kasus.fpb) {
+      uji(`fpb(${k.bilangan}) = ${k.fpb}`, f.fpb(...k.bilangan) === k.fpb
+        && sama(f.faktorPersekutuan(...k.bilangan), k.persekutuan));
+    }
+    for (const salah of kasus.tidak_valid) {
+      let ditolak = false;
+      try { f.validasi(salah); } catch { ditolak = true; }
+      uji(`validasi menolak ${JSON.stringify(salah)}`, ditolak);
+    }
+    uji('teksPasangan(16)', f.teksPasangan(16) === '16 = 1×16 = 2×8 = 4×4');
+
+    document.getElementById('ringkas').innerHTML =
+      `<b>${lulus} lulus, ${gagal} gagal</b>`;
+  </script>
+</body>
+</html>

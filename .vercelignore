@@ -1,0 +1,8 @@
+tests/
+scripts/
+supabase/
+.env
+.venv/
+venv/
+__pycache__/
+.pytest_cache/
