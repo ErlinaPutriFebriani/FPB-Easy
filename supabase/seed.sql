@@ -130,7 +130,7 @@ create temp table _konten on commit drop as select $konten$
       "petunjuk": [
         "FPB adalah faktor persekutuan yang PALING BESAR.",
         "Faktor persekutuan 18 dan 27 adalah 1, 3, dan 9.",
-        "Dari 1, 3, 9, yang paling besar adalah 9."
+        "Lihat lagi 1, 3, 9. Mana yang paling besar? Itulah FPB-nya."
       ]
     },
     {
@@ -152,7 +152,7 @@ create temp table _konten on commit drop as select $konten$
       "petunjuk": [
         "Faktor adalah bilangan yang membagi habis. Coba bagi 28 dengan 1, 2, 3, ... satu per satu.",
         "Faktor 28: 1, 2, 4, __, 14, 28. Angka berapa yang hilang? (ingat 4 × 7 = 28)",
-        "Faktor sama dari 20 dan 28 adalah 1, 2, 4. Yang terbesar 4."
+        "Faktor yang sama dari 20 dan 28 adalah 1, 2, 4. Mana yang paling besar?"
       ]
     },
     {
@@ -174,7 +174,7 @@ create temp table _konten on commit drop as select $konten$
       "petunjuk": [
         "Tulis dulu faktor 24, lalu faktor 32.",
         "Faktor 24: 1, 2, 3, 4, 6, 8, 12, 24. Faktor 32: 1, 2, 4, 8, 16, 32.",
-        "Faktor yang sama: 1, 2, 4, 8. Yang terbesar 8."
+        "Faktor yang sama dari 24 dan 32 adalah 1, 2, 4, 8. Mana yang paling besar?"
       ]
     },
 
@@ -201,7 +201,7 @@ create temp table _konten on commit drop as select $konten$
       "petunjuk": [
         "Angka apa saja yang menunjukkan banyak benda yang dibagi?",
         "Bendanya kelereng merah dan kelereng biru. Cari FPB dari 30 dan 45.",
-        "Faktor persekutuan 30 dan 45: 1, 3, 5, 15. FPB = 15."
+        "Faktor persekutuan 30 dan 45 adalah 1, 3, 5, 15. Mana yang paling besar?"
       ]
     },
     {
@@ -227,7 +227,7 @@ create temp table _konten on commit drop as select $konten$
       "petunjuk": [
         "Barang apa saja yang dibagi ke paket? Angka kelas dan banyak guru tidak dibagi.",
         "Faktor 48: 1, 2, 3, 4, 6, 8, 12, __, 24, 48. (ingat 3 × 16 = 48)",
-        "Faktor persekutuan 32 dan 48: 1, 2, 4, 8, 16. FPB = 16."
+        "Faktor persekutuan 32 dan 48 adalah 1, 2, 4, 8, 16. Mana yang paling besar?"
       ]
     },
     {
@@ -253,7 +253,7 @@ create temp table _konten on commit drop as select $konten$
       "petunjuk": [
         "Benda yang dibagi adalah tali dan tongkat. Lama kegiatan tidak dibagi.",
         "Cari FPB dari 42 dan 56.",
-        "Faktor persekutuan 42 dan 56: 1, 2, 7, 14. FPB = 14."
+        "Faktor persekutuan 42 dan 56 adalah 1, 2, 7, 14. Mana yang paling besar?"
       ]
     },
 
@@ -287,7 +287,7 @@ create temp table _konten on commit drop as select $konten$
       "petunjuk": [
         "Barang apa saja yang masuk paket? Cari barisnya di tabel.",
         "Lihat kolom Jumlah untuk pensil dan buku saja.",
-        "Cari FPB dari 48 dan 36. Faktor persekutuannya 1, 2, 3, 4, 6, 12."
+        "Faktor persekutuan 48 dan 36 adalah 1, 2, 3, 4, 6, 12. Mana yang paling besar?"
       ]
     },
     {
@@ -320,7 +320,7 @@ create temp table _konten on commit drop as select $konten$
       "petunjuk": [
         "Soal menanyakan banyak buah, jadi pakai kolom Banyak (buah), bukan Berat.",
         "Faktor 72: 1, 2, 3, 4, 6, 8, 9, 12, __, 24, 36, 72. (ingat 4 × 18 = 72)",
-        "Faktor persekutuan 54 dan 72: 1, 2, 3, 6, 9, 18. FPB = 18."
+        "Faktor persekutuan 54 dan 72 adalah 1, 2, 3, 6, 9, 18. Mana yang paling besar?"
       ]
     },
     {
@@ -353,7 +353,7 @@ create temp table _konten on commit drop as select $konten$
       "petunjuk": [
         "Cari baris kelas 7A saja, lalu lihat kolom Putra dan Putri.",
         "Cari FPB dari 18 dan 24.",
-        "Faktor persekutuan 18 dan 24: 1, 2, 3, 6. FPB = 6."
+        "Faktor persekutuan 18 dan 24 adalah 1, 2, 3, 6. Mana yang paling besar?"
       ]
     },
 
@@ -434,7 +434,6 @@ create temp table _konten on commit drop as select $konten$
     }
   ]
 }
-
 $konten$::jsonb as j;
 
 insert into materi (id, urutan, judul, isi, contoh)

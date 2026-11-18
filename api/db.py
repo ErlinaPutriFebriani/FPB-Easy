@@ -22,7 +22,7 @@ CACHE_DETIK = 60
 _klien = None
 _cache = {}
 # Mode lokal: jawaban disimpan di memori saja (hilang saat server restart).
-_simpanan_lokal = {"jawaban": [], "hasil_uji": []}
+_simpanan_lokal = {"jawaban": [], "hasil_uji": [], "interaksi_ai": []}
 
 
 class GagalDatabase(Exception):
@@ -141,6 +141,17 @@ def simpan_hasil_uji(baris):
         _jalankan(lambda k: k.table("hasil_uji").insert(baris))
     else:
         _simpanan_lokal["hasil_uji"].append(baris)
+
+
+def simpan_interaksi_ai(baris):
+    """Log percakapan Pembimbing AI (untuk penelitian). Kegagalan TIDAK boleh mengganggu siswa."""
+    if mode_supabase():
+        try:
+            _jalankan(lambda k: k.table("interaksi_ai").insert(baris))
+        except GagalDatabase:
+            pass  # mis. migrasi_002 belum dijalankan; balasan ke siswa tetap dikirim
+    else:
+        _simpanan_lokal["interaksi_ai"].append(baris)
 
 
 def simpanan_lokal():

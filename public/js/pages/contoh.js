@@ -95,6 +95,7 @@ export function tampil(root, [id]) {
             ? 'Tepat! FPB adalah faktor persekutuan yang TERBESAR.'
             : 'Belum tepat. Ingat, huruf T pada FPB artinya "Terbesar".';
           if (p.benar) {
+            tampilJelaskan();
             wadah.querySelector('[data-tombol]').innerHTML = `
               <a class="tombol tombol-kedua" href="#/contoh">Contoh lain</a>
               <a class="tombol" href="#/latihan/${soal.level}">Coba Latihan ▸</a>`;
@@ -102,6 +103,39 @@ export function tampil(root, [id]) {
         });
       });
       gulirKe(tempat);
+    }
+
+    // Refleksi RMT (opsional): siswa menjelaskan dengan kata-katanya sendiri, Pembimbing menanggapi.
+    function tampilJelaskan() {
+      const tempat = wadah.querySelector('[data-refleksi] .refleksi');
+      if (!tempat || tempat.querySelector('[data-form="jelaskan"]')) return;
+      tempat.insertAdjacentHTML('beforeend', `
+        <form class="form-tanya" data-form="jelaskan">
+          <label for="jelaskan">Mau jelaskan dengan kata-katamu sendiri? (boleh dilewati)</label>
+          <input id="jelaskan" name="jelaskan" maxlength="200" autocomplete="off" placeholder="Menurutku, karena…">
+          <button type="submit" class="tombol tombol-kedua">Kirim</button>
+        </form>
+        <div data-tanggapan aria-live="polite"></div>`);
+      const form = tempat.querySelector('[data-form="jelaskan"]');
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const alasan = form.jelaskan.value.trim();
+        if (!alasan) return;
+        const kotak = tempat.querySelector('[data-tanggapan]');
+        form.querySelector('button').disabled = true;
+        kotak.innerHTML = '<p class="pesan-kecil">Pembimbing sedang membaca…</p>';
+        let teks;
+        try {
+          teks = (await api.refleksi(soal.id, alasan, hasil)).teks;
+        } catch (err) {
+          teks = err.message;
+        }
+        form.remove();
+        kotak.innerHTML = `
+          <p class="pesan-siswa"><b>Kamu:</b> ${esc(alasan)}</p>
+          <div class="panel-pembimbing"><h3>Pembimbing</h3><p>${esc(teks)}</p></div>`;
+        gulirKe(kotak);
+      });
     }
 
     wadah.addEventListener('click', (e) => {

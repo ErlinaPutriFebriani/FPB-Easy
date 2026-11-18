@@ -1,6 +1,6 @@
 // Service worker FPB Easy: membuat aplikasi bisa di-install dan dibuka offline.
 // Naikkan VERSI setiap kali daftar FILE_STATIS berubah.
-const VERSI = 'fpb-easy-v1';
+const VERSI = 'fpb-easy-v2';
 
 const FILE_STATIS = [
   '/',

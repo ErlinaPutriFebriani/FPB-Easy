@@ -183,3 +183,21 @@ def test_nilai_uji(konten):
     )
     assert hasil["skor"] == 1 and hasil["total"] == 2
     assert hasil["rincian"][1]["jawaban"] == 12
+
+
+# ------------------------------------------------------------ tahap rencana (RMT: perencanaan tindakan)
+
+def test_untuk_siswa_mengirim_pilihan_rencana(konten):
+    data = logika.untuk_siswa(cari(konten, "tabel-a"), random.Random(3))
+    assert sorted(p["nilai"] for p in data["pilihan_rencana"]) == sorted(logika.URUTAN_RENCANA)
+    assert "pilihan_rencana" not in logika.untuk_siswa(cari(konten, "langsung-a"))
+
+
+def test_periksa_rencana(konten):
+    s = cari(konten, "cerita-a")
+    assert logika.periksa(s, "rencana", ["faktor", "sama", "terbesar"])["benar"]
+    assert "yang sama" in logika.periksa(s, "rencana", ["faktor", "terbesar", "sama"])["pesan"]
+    assert "Langkah pertama" in logika.periksa(s, "rencana", ["sama", "faktor", "terbesar"])["pesan"]
+    assert "ketiga langkah" in logika.periksa(s, "rencana", ["faktor"])["pesan"]
+    with pytest.raises(logika.InputSalah):
+        logika.periksa(s, "rencana", "faktor")

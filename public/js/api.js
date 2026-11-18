@@ -42,6 +42,19 @@ export const api = {
   petunjuk: (soalId, ke) => minta(`/api/petunjuk?soal_id=${q(soalId)}&ke=${q(ke)}`),
   pembahasan: (soalId) => minta(`/api/pembahasan?soal_id=${q(soalId)}`),
   uji: () => minta('/api/uji'),
+  // Pembimbing AI (RMT). Kunci Gemini ada di server; browser hanya mengirim konteks langkah.
+  bimbing: (isi) => kirim('/api/bimbing', {
+    perangkat_id: perangkatId(),
+    kode_siswa: kodeSiswa() || null,
+    ...isi,
+  }),
+  refleksi: (soalId, alasan, jawabanFpb) => kirim('/api/refleksi', {
+    perangkat_id: perangkatId(),
+    kode_siswa: kodeSiswa() || null,
+    soal_id: soalId,
+    alasan,
+    jawaban_fpb: jawabanFpb,
+  }),
   nilaiUji: (jawaban) => kirim('/api/uji/nilai', {
     perangkat_id: perangkatId(),
     kode_siswa: kodeSiswa() || null,

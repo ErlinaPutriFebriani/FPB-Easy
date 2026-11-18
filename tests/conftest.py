@@ -13,11 +13,14 @@ def mode_lokal(monkeypatch):
     """Semua test memakai data lokal (api/data/konten.json), tidak pernah menyentuh Supabase."""
     monkeypatch.delenv("SUPABASE_URL", raising=False)
     monkeypatch.delenv("SUPABASE_SERVICE_KEY", raising=False)
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)  # test TIDAK PERNAH memanggil Gemini sungguhan
+    import ai
     import db
 
     db.hapus_cache()
-    db.simpanan_lokal()["jawaban"].clear()
-    db.simpanan_lokal()["hasil_uji"].clear()
+    ai._hitungan.clear()
+    for daftar in db.simpanan_lokal().values():
+        daftar.clear()
     yield
 
 

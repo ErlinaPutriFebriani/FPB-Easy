@@ -71,6 +71,18 @@ Keterangan: [x] = kode sudah dibuat · [ ] = belum / perlu dilakukan Erlina
 - [ ] Opsional: angket beban kognitif (skala Paas 1–9) dan perbandingan sebelum/sesudah pada soal tabel
 - [ ] Revisi aplikasi berdasarkan temuan
 
+## Tahap 9b: Pembimbing AI (Gemini) + Model RMT
+- [x] `api/ai.py`: prompt RMT + aturan beban kognitif, bantuan bertingkat 1–3, penyaring jawaban akhir, cadangan statis
+- [x] `POST /api/bimbing` dan `POST /api/refleksi` (ditolak untuk soal uji), `/api/ping` menampilkan status `ai`
+- [x] Latihan: label Fase 1–4 + tujuan, langkah "Susun rencanamu", tombol Tanya Pembimbing, kotak tanya bebas, layar Refleksi
+- [x] Contoh Soal: refleksi "jelaskan dengan kata-katamu" ditanggapi Pembimbing
+- [x] Petunjuk statis ke-3 tidak lagi menyebut jawaban akhir (+ test)
+- [x] `supabase/migrasi_002_interaksi_ai.sql` (tabel log percakapan), test pytest tanpa memanggil Gemini sungguhan
+- [ ] Buat kunci Gemini di Google AI Studio, isi `.env` dan Environment Variables Vercel, lalu Redeploy
+- [ ] Jalankan `migrasi_002_interaksi_ai.sql` dan `seed.sql` (petunjuk baru) di SQL Editor Supabase
+- [ ] Uji kualitas balasan Pembimbing dengan kunci asli (4 skenario di bagian verifikasi), lalu sesuaikan prompt bila perlu
+- [ ] Uji coba ke siswa: amati apakah Pembimbing membantu tanpa membuat siswa bergantung (lihat tabel `interaksi_ai`)
+
 ## Tahap 10: Dokumentasi
 - [x] `README.md`: cara menjalankan, Supabase, Vercel, cara memasang di HP
 - [ ] Tambahkan tautan aplikasi + tangkapan layar ke README

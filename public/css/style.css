@@ -220,6 +220,35 @@ input:focus { border-color: var(--utama); outline: none; }
 }
 .kotak-petunjuk p { margin: 0 0 6px; }
 .pesan-kecil { font-size: 16px; color: var(--teks-lembut); }
+
+/* ---------- fase RMT & Pembimbing ---------- */
+.chip-fase {
+  display: inline-block; margin: 0 0 4px; padding: 2px 10px; border-radius: 999px;
+  background: var(--utama-muda); color: var(--utama-gelap); font-size: 16px; font-weight: 800;
+}
+.tujuan { margin: 0 0 8px; color: var(--teks-lembut); font-size: 16px; }
+.tombol-pilihan.rencana { display: flex; align-items: center; gap: 10px; text-align: left; }
+.nomor-urut {
+  flex: none; display: inline-flex; align-items: center; justify-content: center;
+  width: 30px; height: 30px; border-radius: 50%; border: 2px solid currentColor; font-weight: 800;
+}
+.panel-pembimbing {
+  background: var(--kartu); border: 2px solid var(--utama-muda); border-left: 5px solid var(--utama);
+  border-radius: var(--radius); padding: 12px 14px; margin-bottom: 12px;
+}
+.panel-pembimbing h3 { margin: 0 0 6px; font-size: 16px; color: var(--utama-gelap); }
+.panel-pembimbing p { margin: 0 0 8px; }
+.pesan-siswa { color: var(--teks-lembut); }
+.pesan-galat { color: var(--salah); font-weight: 700; }
+.form-tanya { display: flex; gap: 8px; align-items: stretch; margin-top: 8px; flex-wrap: wrap; }
+.form-tanya label { flex-basis: 100%; font-weight: 700; font-size: 16px; }
+.form-tanya input { flex: 1 1 180px; font-size: 18px; font-weight: 600; min-height: 48px; }
+.form-tanya .tombol { flex: none; min-height: 48px; }
+textarea {
+  width: 100%; padding: 10px 14px; border: 2px solid var(--garis); border-radius: var(--radius);
+  font: inherit; font-size: 18px; background: #fff; color: var(--teks); resize: vertical;
+}
+textarea:focus { border-color: var(--utama); outline: none; }
 .kotak-galat { background: var(--salah-latar); border-radius: var(--radius); padding: 16px; }
 
 .selesai, .nilai { text-align: center; }

@@ -117,6 +117,31 @@ Pengguna sekunder: **guru/mahasiswa** yang memakai aplikasi sebagai media pembel
 - Jawaban yang dibuat saat offline diantrikan, lalu dikirim otomatis saat online.
 - Guru/peneliti melihat dan mengunduh data (CSV) dari dasbor Supabase. Data ini dipakai untuk evaluasi di tahap uji coba.
 
+### F9. Pembimbing AI (Gemini) berbasis RMT
+- Di **Latihan**, tombol Petunjuk diganti **"Tanya Pembimbing (n/3)"**. Bantuan bertingkat per langkah:
+  - 1 = mengarahkan perhatian;
+  - 2 = strategi;
+  - 3 = langkah konkret;
+  - setelah itu tersedia pembahasan.
+- Pembimbing membaca **langkah aktif, fase RMT, dan jawaban salah terakhir** siswa. Ia menjawab dengan **pertanyaan penuntun** (mediasi), **tidak pernah memberi jawaban akhir**. Server menyaring balasan yang menyebut jawaban akhir.
+- Siswa boleh **mengetik pertanyaan bebas** (maks. 150 karakter, ±20 pesan per soal), hanya seputar soal yang sedang dikerjakan.
+- **Beban kognitif** dikendalikan di prompt dan di server:
+  - intrinsic: hanya langkah aktif;
+  - extraneous: maks. 2 kalimat, tanpa markdown/emoji, tanpa info baru;
+  - germane: diakhiri satu pertanyaan penuntun.
+- **Tidak dipakai di Uji Diri dan Kalkulator.** Uji Diri tetap mengukur kemampuan mandiri.
+- Kunci `GEMINI_API_KEY` hanya ada di server. Jika kunci kosong, Gemini gagal, atau kuota habis, aplikasi memakai petunjuk statis yang juga tidak menyebut jawaban akhir.
+- Percakapan dicatat anonim di tabel `interaksi_ai` (fase, tahap, tingkat, pertanyaan, balasan) untuk analisis penelitian.
+
+### F10. Tahapan Rigorous Mathematical Thinking (RMT) di Latihan
+- Setiap langkah diberi label fase dan kalimat tujuan (MLE: intensionalitas):
+  - **Fase 1 · Kumpulkan informasi** (Input): pilih angka/sel, apa yang ditanya;
+  - **Fase 2 · Olah informasi** (Elaborasi): susun rencana, faktor, faktor persekutuan, FPB;
+  - **Fase 3 · Sampaikan jawaban** (Output): kesimpulan;
+  - **Fase 4 · Refleksi**.
+- Langkah baru **"Susun rencanamu"** (perencanaan tindakan, Learning Activity) untuk soal cerita/tabel fading A–B. Siswa mengetuk urutan: tulis faktor → cari yang sama → pilih yang terbesar.
+- **Refleksi** setelah soal selesai: siswa menjelaskan "Mengapa X FPB-nya?". Pembimbing menanggapi bagian yang tepat, meluruskan miskonsepsi, lalu bertanya "kapan lagi FPB berguna?" (makna & transendensi). Refleksi juga tersedia (opsional) di Contoh Soal.
+
 ## 7. User Story & Kriteria Penerimaan
 | ID | User story | Kriteria penerimaan |
 |---|---|---|
@@ -130,6 +155,11 @@ Pengguna sekunder: **guru/mahasiswa** yang memakai aplikasi sebagai media pembel
 | US8 | Sebagai siswa, aku ingin progresku tersimpan | Progres tetap ada setelah aplikasi ditutup dan dibuka lagi (`localStorage`) dan tercatat di Supabase |
 | US9 | Sebagai siswa, aku ingin memasang aplikasi di HP tanpa lewat Play Store/App Store | Dari tautan Vercel, aplikasi bisa di-install di Android (tombol "Pasang Aplikasi") dan iPhone (panduan "Tambah ke Layar Utama"). Ikon muncul di layar utama dan aplikasi terbuka tanpa bilah alamat |
 | US10 | Sebagai guru/peneliti, aku ingin melihat hasil belajar siswa | Data jawaban dan skor bisa dilihat dan diunduh dari dasbor Supabase tanpa memuat data pribadi |
+| US11 | Sebagai siswa, aku ingin dibimbing saat bingung tanpa langsung diberi jawaban | Tombol "Tanya Pembimbing" memberi bantuan sesuai kesalahan terakhirku dalam ≤ 2 kalimat, diakhiri pertanyaan penuntun. Balasan tidak pernah menyebut FPB akhir atau kalimat kesimpulan. Jika AI tidak tersedia, tetap muncul petunjuk statis |
+| US12 | Sebagai siswa, aku ingin bertanya dengan kata-kataku sendiri | Kotak tanya (maks. 150 karakter) muncul di panel Pembimbing. Pertanyaan di luar soal dialihkan kembali ke soal |
+| US13 | Sebagai siswa, aku ingin tahu sedang berada di tahap berpikir yang mana | Setiap langkah menampilkan label Fase 1–4 RMT + tujuannya. Soal cerita/tabel punya langkah "Susun rencanamu" |
+| US14 | Sebagai siswa, aku ingin memeriksa cara berpikirku setelah selesai | Setelah soal latihan benar muncul layar Refleksi. Penjelasanku ditanggapi Pembimbing. Refleksi boleh dilewati |
+| US15 | Sebagai peneliti, aku ingin tahu di fase mana siswa kesulitan | Tabel `interaksi_ai` mencatat fase, tahap, tingkat bantuan, pertanyaan, dan alasan refleksi siswa (anonim) |
 
 ## 8. Kebutuhan Non-Fungsional
 - **Teknologi:** backend **Python (Flask)**, frontend **JavaScript**, database **Supabase**, hosting **Vercel**.
@@ -158,3 +188,7 @@ Pengguna sekunder: **guru/mahasiswa** yang memakai aplikasi sebagai media pembel
 | *Cold start* Vercel (API pertama lambat ±1–3 detik) | Tampilkan indikator memuat. Materi & soal di-cache service worker |
 | Proyek Supabase gratis dijeda jika tidak aktif ±7 hari | Buka dasbor secara rutin selama uji coba. Aplikasi tetap bisa memakai data yang di-cache |
 | Kunci Supabase bocor | Kunci hanya di Environment Variables, `.env` di `.gitignore`, RLS aktif |
+| AI memberi jawaban akhir | Prompt sistem melarang. Server menyaring balasan yang menyebut FPB akhir/kesimpulan dan menggantinya dengan petunjuk statis (`ai.bocor`, diuji pytest) |
+| AI keliru (halusinasi) atau keluar topik | Data soal dan faktor yang benar dikirim ke prompt. Suhu rendah, balasan pendek. Pertanyaan di luar soal dialihkan. Pemeriksaan jawaban tetap dilakukan Python, bukan AI |
+| Kuota/biaya Gemini, AI lambat | Batas 150 karakter, ±20 pesan per soal, maks. token kecil, timeout 8 detik. Jika gagal, otomatis memakai petunjuk statis |
+| Kunci Gemini bocor | Hanya di `.env` dan Environment Variables Vercel. Browser tidak pernah menerima kunci |

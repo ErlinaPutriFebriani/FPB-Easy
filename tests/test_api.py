@@ -16,7 +16,7 @@ def klien():
 def test_ping(klien):
     res = klien.get("/api/ping")
     assert res.status_code == 200
-    assert res.get_json() == {"ok": True, "mode": "lokal", "database": "lokal"}
+    assert res.get_json() == {"ok": True, "mode": "lokal", "database": "lokal", "ai": "nonaktif"}
 
 
 def test_semua_rute_api_terdaftar_dengan_path_asli():
@@ -173,3 +173,57 @@ def test_halaman_utama_dan_pwa(klien):
     assert klien.get("/manifest.json").status_code == 200
     assert klien.get("/service-worker.js").status_code == 200
     assert klien.get("/icons/icon-512.png").status_code == 200
+
+
+# ------------------------------------------------------------ Pembimbing AI (mode lokal: cadangan statis)
+
+def test_bimbing_tanpa_kunci_memakai_petunjuk_statis(klien):
+    res = klien.post("/api/bimbing", json={
+        "perangkat_id": PERANGKAT, "soal_id": "tabel-a", "tahap": "pilih_sel", "tingkat": 1,
+        "jawaban_salah": [[0, 2]], "pesan_salah": "Bukan harga.",
+    })
+    assert res.status_code == 200
+    data = res.get_json()
+    assert data["sumber"] == "statis" and data["fase"] == "input" and data["ai_aktif"] is False
+    assert data["teks"].startswith("Barang apa saja")
+    log = db.simpanan_lokal()["interaksi_ai"][-1]
+    assert log["jenis"] == "petunjuk" and log["tingkat"] == 1 and log["soal_id"] == "tabel-a"
+
+
+def test_bimbing_tanya_bebas_dicatat(klien):
+    res = klien.post("/api/bimbing", json={
+        "perangkat_id": PERANGKAT, "soal_id": "langsung-b", "tahap": "fpb", "pertanyaan": "faktor itu apa?",
+    })
+    assert res.status_code == 200
+    log = db.simpanan_lokal()["interaksi_ai"][-1]
+    assert log["jenis"] == "tanya" and log["pesan_siswa"] == "faktor itu apa?" and log["tingkat"] is None
+
+
+def test_bimbing_ditolak_untuk_uji_dan_input_salah(klien):
+    dasar = {"perangkat_id": PERANGKAT, "soal_id": "uji-langsung-1", "tahap": "fpb"}
+    assert klien.post("/api/bimbing", json=dasar).status_code == 400
+    dasar["soal_id"] = "langsung-b"
+    assert klien.post("/api/bimbing", json={**dasar, "pertanyaan": "x" * 151}).status_code == 400
+    assert klien.post("/api/bimbing", json={**dasar, "tahap": "hack"}).status_code == 400
+    assert klien.post("/api/bimbing", json={**dasar, "perangkat_id": "bukan"}).status_code == 400
+
+
+def test_refleksi_endpoint(klien):
+    res = klien.post("/api/refleksi", json={
+        "perangkat_id": PERANGKAT, "soal_id": "langsung-b", "alasan": "karena paling besar", "jawaban_fpb": 4,
+    })
+    assert res.status_code == 200 and res.get_json()["fase"] == "refleksi"
+    assert db.simpanan_lokal()["interaksi_ai"][-1]["jenis"] == "refleksi"
+    kosong = klien.post("/api/refleksi", json={"perangkat_id": PERANGKAT, "soal_id": "langsung-b", "alasan": " "})
+    assert kosong.status_code == 400
+    uji = klien.post("/api/refleksi", json={"perangkat_id": PERANGKAT, "soal_id": "uji-tabel-1", "alasan": "a"})
+    assert uji.status_code == 400
+
+
+def test_bimbing_batas_pesan(klien):
+    import ai
+
+    isi = {"perangkat_id": PERANGKAT, "soal_id": "langsung-a", "tahap": "fpb"}
+    for _ in range(ai.MAKS_PESAN_PER_SOAL):
+        klien.post("/api/bimbing", json=isi)
+    assert "banyak bertanya" in klien.post("/api/bimbing", json=isi).get_json()["teks"]

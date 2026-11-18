@@ -26,6 +26,7 @@ File ini berisi pedoman bagi AI (Claude) maupun pengembang saat menulis kode unt
 | Database | **Supabase** (PostgreSQL) | Menyimpan materi, bank soal, jawaban siswa, dan hasil uji diri |
 | Hosting | **Vercel** | Menyajikan frontend statis + API Python dengan **HTTPS otomatis** (syarat PWA) |
 | PWA | `manifest.json` + `service-worker.js` | Install ke layar utama HP dan bisa dipakai offline |
+| AI | **Gemini** (REST `generateContent` lewat `httpx`, di `api/ai.py`) | Pembimbing proses berpikir berbasis RMT di Latihan & refleksi. Kunci `GEMINI_API_KEY` hanya di server |
 | Font | Nunito (Google Fonts), cadangan `system-ui, sans-serif` | |
 
 Arsitektur singkat:
@@ -90,6 +91,9 @@ Vercel ── /        → file statis di public/
 | `GET /api/uji` | 5 soal acak campuran untuk Uji Diri |
 | `POST /api/periksa` | Memeriksa jawaban/sel yang dipilih, mengembalikan `benar` + umpan balik/petunjuk |
 | `POST /api/hasil` | Menyimpan jawaban/skor ke Supabase (bisa menerima beberapa sekaligus dari antrean offline) |
+| `POST /api/bimbing` | Pembimbing AI: bantuan bertingkat (1–3) atau jawaban pertanyaan bebas (≤150 huruf) untuk langkah aktif, tanpa jawaban akhir. Ditolak untuk soal uji |
+| `POST /api/refleksi` | Fase Refleksi RMT: Pembimbing menanggapi alasan siswa (≤200 huruf) |
+| `GET /api/ping` | Status: `mode` (lokal/supabase), `database`, `ai` (aktif/nonaktif) |
 
 ## 6. Aturan Coding
 1. **Algoritma utama ditulis di Python** (`api/fpb.py`), berupa fungsi murni tanpa Flask/DB:
@@ -106,6 +110,13 @@ Vercel ── /        → file statis di public/
 8. **Aksesibilitas:** font isi ≥ 18px, tombol ≥ 44×44px, kontras ≥ 4.5:1, mobile-first (lebar 360px).
 9. **Penamaan:** Python memakai `snake_case`, JavaScript memakai `camelCase`. Keduanya boleh berbahasa Indonesia.
 10. Setiap fitur baru harus bisa ditelusuri ke kebutuhan di PRD.md (kode wawancara).
+11. **Pembimbing AI (`api/ai.py`):**
+    - AI hanya membimbing dan **tidak pernah** memeriksa jawaban. Pemeriksaan tetap di `soal.py`.
+    - Setiap balasan melewati `bersihkan()` dan `bocor()`. Jika menyebut jawaban akhir, balasan diganti petunjuk statis.
+    - Petunjuk statis di `konten.json` juga tidak boleh menyebut jawaban akhir (diuji pytest).
+    - Uji Diri dan Kalkulator **tanpa AI**.
+    - Test **tidak boleh** memanggil Gemini sungguhan (`httpx.post` di-mock, `GEMINI_API_KEY` dihapus di `conftest.py`).
+    - Aplikasi harus tetap berjalan bila kunci kosong.
 
 ## 7. Prinsip Beban Kognitif (WAJIB di setiap layar)
 Ringkasan dari [DESAIN.md](DESAIN.md). Periksa daftar ini sebelum menyelesaikan sebuah fitur:
@@ -120,6 +131,13 @@ Ringkasan dari [DESAIN.md](DESAIN.md). Periksa daftar ini sebelum menyelesaikan 
 - [ ] **Fading:** contoh lengkap → sebagian langkah dikosongkan → mandiri.
 - [ ] **Umpan balik segera dan spesifik**, dengan petunjuk bertahap, bukan langsung memberi jawaban.
 - [ ] **Loading tidak mengganggu:** saat menunggu API, tampilkan indikator kecil dan jangan kosongkan soal.
+
+**Model RMT (Rigorous Mathematical Thinking), lihat [DESAIN.md](DESAIN.md#13-rigorous-mathematical-thinking-rmt-kinard--kozulin):**
+- [ ] Setiap langkah latihan diberi label **Fase 1–4** (Input → Elaborasi → Output → Refleksi) dan satu kalimat **"Tujuan: …"** (intensionalitas).
+- [ ] Ada langkah **perencanaan** sebelum menghitung (soal cerita/tabel, fading A–B).
+- [ ] Bantuan berupa **pertanyaan penuntun** yang sesuai fase dan kesalahan siswa, bertingkat, dan tanpa jawaban akhir.
+- [ ] Soal diakhiri **refleksi** (makna & transendensi: kapan lagi konsep ini berguna?).
+- [ ] Pembimbing AI menjaga beban kognitif: hanya langkah aktif, ≤ 2 kalimat, tanpa hiasan, diakhiri satu pertanyaan.
 
 ## 8. Instalasi di Smartphone tanpa Play Store/App Store
 Aplikasi ini adalah **PWA**. Siswa cukup membuka tautan Vercel (misalnya `https://fpb-easy.vercel.app`) lalu memasangnya dari browser:
@@ -155,6 +173,7 @@ Panduan lengkap untuk pemula ada di [README.md](README.md).
 **Menjalankan secara lokal:**
 - `pip install -r requirements-dev.txt` lalu `python api/index.py` → buka `http://localhost:5000`. Flask menyajikan `public/` sekaligus API.
 - Tanpa `.env`, aplikasi berjalan dalam **mode lokal** (data dari `api/data/konten.json`, jawaban disimpan di memori). Dengan `.env` berisi kunci Supabase, aplikasi memakai Supabase.
+- Pembimbing AI aktif jika `.env` berisi `GEMINI_API_KEY` (opsional `GEMINI_MODEL`). Tanpa kunci, aplikasi memakai petunjuk statis. Tabel log AI dibuat dengan `supabase/migrasi_002_interaksi_ai.sql`.
 - Uji di HP pada Wi-Fi yang sama: `http://<IP-laptop>:5000`. Instalasi PWA penuh baru bisa dicoba setelah deploy karena butuh HTTPS.
 - Alternatif yang paling mirip produksi: `vercel dev` (perlu Node.js + `npm i -g vercel`).
 

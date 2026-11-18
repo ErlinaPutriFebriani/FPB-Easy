@@ -67,6 +67,9 @@ alter table soal      enable row level security;
 alter table jawaban   enable row level security;
 alter table hasil_uji enable row level security;
 
+-- Tabel interaksi_ai (log Pembimbing AI) ada di supabase/migrasi_002_interaksi_ai.sql.
+-- Untuk proyek Supabase BARU: jalankan schema.sql, seed.sql, lalu migrasi_002_interaksi_ai.sql.
+
 -- ------------------------------------------------------------------
 -- Contoh query analisis untuk penelitian (jalankan terpisah bila perlu)
 -- ------------------------------------------------------------------

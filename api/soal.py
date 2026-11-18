@@ -19,6 +19,14 @@ PILIHAN_DITANYA = [
     {"nilai": "kpk", "teks": "Mencari waktu bertemu bersamaan (KPK)"},
 ]
 
+# Tahap "rencana" (RMT: analisis tugas & perencanaan tindakan). Urutan benar = urutan list ini.
+PILIHAN_RENCANA = [
+    {"nilai": "faktor", "teks": "Tulis semua faktor tiap bilangan"},
+    {"nilai": "sama", "teks": "Cari faktor yang sama"},
+    {"nilai": "terbesar", "teks": "Pilih faktor sama yang paling besar"},
+]
+URUTAN_RENCANA = [p["nilai"] for p in PILIHAN_RENCANA]
+
 PESAN_DITANYA = {
     "jumlah": "Kalau dijumlahkan, kita tidak tahu ada berapa kelompok yang isinya sama. "
               "Kata kuncinya: 'isi sama banyak' dan 'paling banyak'.",
@@ -54,6 +62,9 @@ def untuk_siswa(soal, acak=random):
         data["angka_cerita"] = angka_dalam_teks(soal["pertanyaan"])
     if soal["jenis"] in ("cerita", "tabel"):
         data["pilihan_ditanya"] = PILIHAN_DITANYA
+        rencana = list(PILIHAN_RENCANA)
+        acak.shuffle(rencana)
+        data["pilihan_rencana"] = rencana
     if soal.get("pilihan_kesimpulan"):
         pilihan = list(soal["pilihan_kesimpulan"])
         acak.shuffle(pilihan)
@@ -211,6 +222,25 @@ def _periksa_bilangan(soal, isian):
     return {"benar": False, "pesan": "Sudah benar sebagian. Masih ada angka lain yang dibutuhkan."}
 
 
+def periksa_rencana(isian):
+    """Urutan langkah yang dipilih siswa (RMT: perencanaan tindakan)."""
+    if not isinstance(isian, list) or not all(isinstance(x, str) for x in isian):
+        raise InputSalah("Isian rencana harus berupa daftar langkah.")
+    if isian == URUTAN_RENCANA:
+        return {"benar": True, "pesan": "Tepat! Rencanamu sudah urut. Sekarang kita jalankan rencananya."}
+    if len(isian) < len(URUTAN_RENCANA):
+        return {"benar": False, "pesan": "Ketuk ketiga langkah sesuai urutan yang akan kamu kerjakan."}
+    if isian[0] != "faktor":
+        return {
+            "benar": False,
+            "pesan": "Langkah pertama: kumpulkan dulu bahannya. Apa yang harus ditulis sebelum mencari yang sama?",
+        }
+    return {
+        "benar": False,
+        "pesan": "Sebelum memilih yang terbesar, kamu perlu tahu dulu faktor yang sama.",
+    }
+
+
 def periksa(soal, tahap, isian):
     """Memeriksa satu tahap pengerjaan. Mengembalikan {benar, pesan, ...}."""
     bil = soal["bilangan"]
@@ -227,6 +257,9 @@ def periksa(soal, tahap, isian):
         if isian == "fpb":
             return {"benar": True, "pesan": "Tepat! Benda dibagi sama banyak sebanyak mungkin → FPB."}
         return {"benar": False, "pesan": PESAN_DITANYA.get(isian, "Coba baca lagi pertanyaannya.")}
+
+    if tahap == "rencana":
+        return periksa_rencana(isian)
 
     if tahap == "faktor":
         if not isinstance(isian, dict):

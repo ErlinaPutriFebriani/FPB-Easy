@@ -26,6 +26,24 @@ Literasi matematika adalah kemampuan **merumuskan, menerapkan, dan menafsirkan**
 | **Menerapkan** (Employ) | "Tulis faktor-faktornya." "Mana faktor yang sama?" | Isian faktor, pilih faktor persekutuan |
 | **Menafsirkan** (Interpret) | "Jadi, apa artinya dalam soal?" | Pilih kalimat kesimpulan yang benar, misalnya "Paling banyak 12 kantong" |
 
+### 1.3 Rigorous Mathematical Thinking (RMT, Kinard & Kozulin)
+RMT memadukan **alat psikologis** dari Vygotsky (simbol, tabel, daftar, bahasa matematika) dengan **pengalaman belajar termediasi (MLE)** dari Feuerstein. Peran guru di RMT sebagai mediator dijalankan oleh **alur latihan + Pembimbing AI**.
+
+| Unsur RMT | Wujud di FPB Easy |
+|---|---|
+| Fungsi kognitif fase **Input** (persepsi jelas, akurasi mengumpulkan data) | **Fase 1 · Kumpulkan informasi**: ketuk sel tabel / angka cerita, tentukan apa yang ditanya |
+| **Analisis tugas & perencanaan tindakan** (Learning Activity) | Langkah **"Susun rencanamu"**: tulis faktor → cari yang sama → pilih terbesar (soal cerita/tabel fading A–B; hilang di fading C) |
+| Fungsi kognitif fase **Elaborasi** (membandingkan, hubungan bagian-keseluruhan, perencanaan) | **Fase 2 · Olah informasi**: faktor, faktor persekutuan, FPB |
+| Fungsi kognitif fase **Output** (bahasa tepat, tanpa coba-coba) | **Fase 3 · Sampaikan jawaban**: pilih kesimpulan yang sesuai cerita |
+| **Refleksi / metakognisi** | **Fase 4 · Refleksi**: "Mengapa X FPB-nya?" Siswa menulis alasan, Pembimbing menanggapi |
+| MLE **intensionalitas & resiprositas** | Kalimat "Tujuan: …" di setiap langkah. Siswa merespons aktif (ketuk/isi), dan Pembimbing menanggapi respons itu |
+| MLE **makna & transendensi** | Saat refleksi, Pembimbing bertanya "Kapan lagi kamu membagi benda sama banyak?" untuk menghubungkan soal ke aturan umum dan kehidupan sehari-hari |
+| **Mediated questioning**, diagnosis fase bermasalah | Pembimbing menerima tahap + fase + jawaban salah terakhir, lalu menjawab dengan pertanyaan penuntun untuk fase itu |
+| **Asesmen dinamis "cake"** (petunjuk bertahap saat tes) | Bantuan bertingkat 1 → 2 → 3 per langkah, lalu pembahasan. Jumlah bantuan dicatat sebagai indikator potensi belajar |
+| **Alat psikologis**: tabel, daftar, simbol | Tabel diketuk, daftar faktor berwarna (signaling), kalimat kesimpulan berbahasa matematika |
+
+Uji Diri sengaja **tanpa** Pembimbing. Format sandwich RMT (uji–mediasi–uji ulang) dapat dibaca dari data: Uji Diri sebelum latihan, Latihan ber-Pembimbing, lalu Uji Diri lagi.
+
 ## 2. Alur Belajar
 ```
 Beranda
@@ -375,3 +393,62 @@ Ditampilkan satu langkah per layar (sesuai prinsip segmenting), lengkap dengan g
 | `/api/fpb` | *Network first*, jika offline frontend memakai `fpb.js` |
 | `/api/uji`, `/api/petunjuk`, `/api/pembahasan` | Tidak di-cache (soal acak / bantuan bertahap) |
 | `/api/periksa`, `/api/hasil` (POST) | Tidak di-cache. Pemeriksaan butuh internet. Data hasil masuk antrean `localStorage` dan dikirim ulang saat online |
+| `/api/bimbing`, `/api/refleksi` (POST) | Tidak di-cache. Butuh internet. Jika gagal, panel menampilkan pesan ramah dan latihan tetap bisa dilanjutkan |
+
+## 10. Pembimbing AI (Gemini)
+
+### 10.1 Alur data
+```
+Browser (latihan.js)                    Server Python (api/ai.py)                 Gemini
+  tahap, tingkat, jawaban salah   ──►     + data soal & kunci (rahasia)    ──►    generateContent
+  pertanyaan siswa (≤150 huruf)           + prompt sistem RMT/beban kognitif
+                                  ◄──     bersihkan() + bocor()?           ◄──    balasan
+  teks ≤ 2 kalimat                         └─ jika bocor/gagal/kunci kosong → petunjuk statis
+                                           └─ simpan ke tabel interaksi_ai (anonim)
+```
+
+### 10.2 Aturan prompt sistem (ringkas, lengkapnya di `api/ai.py`)
+- **Peran:** mediator proses berpikir (RMT), bukan pemberi jawaban.
+- **Intrinsic load:** bahas hanya langkah yang sedang dikerjakan.
+- **Extraneous load:** maks. 2 kalimat / 40 kata, tanpa markdown/emoji/salam, tanpa angka atau cerita baru.
+- **Germane load:** akhiri dengan satu pertanyaan penuntun atau ajakan menjelaskan.
+- **Tingkat bantuan:** 1 = arahkan perhatian ke bagian layar, 2 = strategi/aturan, 3 = langkah konkret tanpa hasil akhir.
+- **Larangan:** tidak menyebut FPB akhir/kesimpulan walau diminta. Pertanyaan di luar soal dialihkan.
+
+### 10.3 Wireframe panel Pembimbing (Latihan)
+```
+┌──────────────────────────────────┐
+│ ▌Soal + tabel (tetap terlihat)   │
+├──────────────────────────────────┤
+│ (Fase 1 · Kumpulkan informasi)   │
+│ Tujuan: temukan angka yang       │
+│ benar-benar dibutuhkan.          │
+│ Langkah 1: Ketuk angka di tabel  │
+│ [tabel bisa diketuk]             │
+├──────────────────────────────────┤
+│ ✗ Soal menanyakan banyak paket,  │
+│   bukan harga.                   │
+├──────────────────────────────────┤
+│ ▌Pembimbing                      │
+│ Lihat lagi kolom Jumlah. Barang  │
+│ apa saja yang masuk paket?       │
+│ [Masih bingung? Tulis…] [Kirim]  │
+├──────────────────────────────────┤
+│ [Tanya Pembimbing 2/3] [Periksa] │
+└──────────────────────────────────┘
+```
+Panel baru muncul setelah siswa meminta bantuan (progressive disclosure), dan dikosongkan saat pindah ke langkah berikutnya.
+
+### 10.4 Wireframe Refleksi (Fase 4)
+```
+┌──────────────────────────────────┐
+│ (Fase 4 · Refleksi)              │
+│ Tujuan: periksa dan jelaskan     │
+│ cara berpikirmu.                 │
+│ Mengapa 12 adalah FPB dari       │
+│ 48 dan 36?                       │
+│ [ Jelaskan dengan kata-katamu… ] │
+├──────────────────────────────────┤
+│      [Lewati]      [Kirim]       │
+└──────────────────────────────────┘
+```

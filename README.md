@@ -16,7 +16,8 @@ Dokumen perencanaan: [PRD.md](PRD.md) · [DESAIN.md](DESAIN.md) · [RENCANA.md](
 |---|---|
 | 📖 Materi | 6 kartu pendek, satu ide per layar |
 | 💡 Contoh Soal | Pembahasan muncul satu langkah setiap kali tombol "Lanjut" ditekan, lengkap dengan alasannya |
-| ✏️ Latihan | Level 1 langsung → Level 2 cerita → Level 3 tabel. Bantuan berkurang bertahap (A → B → C), dengan petunjuk bertahap dan umpan balik spesifik |
+| ✏️ Latihan | Level 1 langsung → Level 2 cerita → Level 3 tabel. Bantuan berkurang bertahap (A → B → C), dengan umpan balik spesifik. Mengikuti fase **RMT**: Kumpulkan informasi → Olah informasi (termasuk "Susun rencanamu") → Sampaikan jawaban → Refleksi |
+| 🧭 Pembimbing AI | Tombol **Tanya Pembimbing** (Gemini) memberi pertanyaan penuntun sesuai kesalahan siswa, bertingkat 1–3, tanpa jawaban akhir. Siswa juga bisa mengetik pertanyaan singkat. Ada di Latihan dan refleksi Contoh Soal |
 | 🧮 Kalkulator FPB | Menampilkan cara: faktor → faktor persekutuan → FPB. Tetap berfungsi offline |
 | 🎯 Uji Diri | 5 soal tanpa petunjuk, lalu nilai dan pembahasan |
 | 📲 Pasang Aplikasi | Tombol pasang (Android) dan panduan iPhone |
@@ -68,6 +69,28 @@ Tanpa Node.js: jalankan `python -m http.server 8000` di folder proyek, lalu buka
 
 ---
 
+### B2. Tabel log Pembimbing AI (sekali saja)
+SQL Editor → New query → tempel isi [supabase/migrasi_002_interaksi_ai.sql](supabase/migrasi_002_interaksi_ai.sql) → **Run**. Langkah ini membuat tabel `interaksi_ai` tanpa mengubah data yang sudah ada. Contoh query analisis per fase RMT ada di bagian bawah file itu.
+
+---
+
+## B3. Mengaktifkan Pembimbing AI (Gemini)
+
+1. Buka <https://aistudio.google.com> → login dengan akun Google → **Get API key** → **Create API key**.
+2. Tempel kunci itu ke `.env` di laptop:
+   ```text
+   GEMINI_API_KEY=kunci-dari-ai-studio
+   GEMINI_MODEL=
+   ```
+   `GEMINI_MODEL` boleh dikosongkan; aplikasi memakai `gemini-2.5-flash`. Isi nama model lain jika model itu sudah tidak tersedia.
+3. Jalankan ulang `python api/index.py`, lalu buka `http://localhost:5000/api/ping`. Hasilnya harus berisi `"ai": "aktif"`.
+4. Di Vercel: **Settings → Environment Variables** → tambahkan `GEMINI_API_KEY` (Production + Preview) → **Redeploy**.
+
+> ⚠️ Kunci Gemini bersifat **rahasia**, sama seperti kunci Supabase. Jangan ditempel di kode, chat, atau GitHub.
+> Tanpa kunci, aplikasi tetap berjalan dan memakai petunjuk statis dari `konten.json`.
+
+---
+
 ## C. Online-kan di Vercel
 
 1. Unggah proyek ke GitHub (repo baru → upload, atau `git push`).
@@ -75,7 +98,8 @@ Tanpa Node.js: jalankan `python -m http.server 8000` di folder proyek, lalu buka
 3. Pengaturan build biarkan bawaan. Vercel mengenali aplikasi Flask di `api/index.py`, dan `vercel.json` sudah mengatur folder `public/`.
 4. Buka **Environment Variables** → tambahkan `SUPABASE_URL` dan `SUPABASE_SERVICE_KEY` (centang Production dan Preview). Nilainya sama dengan isi `.env` di laptop, tanpa tanda kutip atau spasi.
 5. Klik **Deploy**. Hasilnya berupa tautan, misalnya `https://fpb-easy.vercel.app`. Jika env baru diisi atau diubah setelah deploy, buka **Deployments → ⋯ → Redeploy**.
-6. Periksa dengan membuka `https://<tautan>/api/ping`. Respons harus `{"ok": true, "mode": "supabase", "database": "terhubung"}`.
+6. Periksa dengan membuka `https://<tautan>/api/ping`. Respons harus `{"ok": true, "mode": "supabase", "database": "terhubung", "ai": "aktif"}`.
+   - `"ai": "nonaktif"` → `GEMINI_API_KEY` belum diisi di Vercel. Isi, lalu Redeploy.
    - `"mode": "lokal"` → env belum terbaca. Isi env, lalu Redeploy.
    - `"database": "gagal"` → kunci/URL salah atau proyek Supabase sedang dijeda. Buka dasbor Supabase, lalu cek log di Vercel (tab **Logs**).
    - `"Alamat API tidak ditemukan"` → jangan menambahkan `rewrites` untuk `/api/...` di `vercel.json`. Vercel sudah meneruskan path aslinya ke Flask.
@@ -97,10 +121,11 @@ Ikon **FPB Easy** akan muncul di layar utama. Panduan bergambar juga tersedia di
 
 ## Struktur Folder
 ```text
-api/            Python (Flask): index.py (API), fpb.py (algoritma), soal.py (pemeriksaan), db.py (Supabase)
+api/            Python (Flask): index.py (API), fpb.py (algoritma), soal.py (pemeriksaan), db.py (Supabase),
+                ai.py (Pembimbing AI Gemini berbasis RMT)
 api/data/       konten.json: materi & bank soal (sumber mode lokal & seed Supabase)
 public/         JavaScript + HTML/CSS: aplikasi PWA (index.html, js/, css/, icons/, manifest, service worker)
-supabase/       schema.sql & seed.sql
+supabase/       schema.sql, seed.sql, migrasi_002_interaksi_ai.sql
 scripts/        buat_seed_sql.py, buat_ikon.ps1
 tests/          pytest + test JavaScript (kasus uji bersama: kasus_fpb.json)
 ```

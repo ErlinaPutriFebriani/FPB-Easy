@@ -4,6 +4,7 @@
 - Di laptop: `python api/index.py` juga menyajikan frontend dari folder public/.
 """
 
+import json
 import os
 import re
 import sys
@@ -16,6 +17,7 @@ if str(FOLDER_API) not in sys.path:
 
 from flask import Flask, jsonify, request, send_from_directory  # noqa: E402
 
+import ai  # noqa: E402
 import db  # noqa: E402
 import fpb as alg  # noqa: E402
 import soal as logika  # noqa: E402
@@ -128,6 +130,7 @@ def ping():
         "ok": True,
         "mode": "supabase" if db.mode_supabase() else "lokal",
         "database": db.cek_koneksi(),
+        "ai": "aktif" if ai.aktif() else "nonaktif",
     })
 
 
@@ -212,6 +215,101 @@ def api_uji_nilai():
         ],
     })
     return jsonify(hasil)
+
+
+# ---------------------------------------------------------------- Pembimbing AI (RMT)
+
+def _soal_untuk_ai(soal_id):
+    soal = _ambil_soal_atau_404(soal_id)
+    if soal["peran"] == "uji":
+        raise PermintaanSalah("Uji Diri dikerjakan mandiri, tanpa Pembimbing.")
+    return soal
+
+
+def _teks_pendek(data, nama, batas, wajib=False):
+    nilai = data.get(nama)
+    if nilai is None or (isinstance(nilai, str) and not nilai.strip()):
+        if wajib:
+            raise PermintaanSalah("Tulis dulu pesanmu, ya.")
+        return None
+    if not isinstance(nilai, str):
+        raise PermintaanSalah(f"{nama} harus berupa teks.")
+    nilai = nilai.strip()
+    if len(nilai) > batas:
+        raise PermintaanSalah(f"Pesanmu terlalu panjang. Maksimal {batas} huruf, ya.")
+    return nilai
+
+
+def _riwayat(data):
+    daftar = data.get("riwayat") or []
+    if not isinstance(daftar, list):
+        raise PermintaanSalah("Riwayat harus berupa daftar.")
+    hasil = []
+    for r in daftar[-ai.MAKS_RIWAYAT:]:
+        if isinstance(r, dict) and r.get("peran") in ("siswa", "pembimbing") and isinstance(r.get("teks"), str):
+            hasil.append({"peran": r["peran"], "teks": r["teks"][:ai.MAKS_KARAKTER_BALASAN]})
+    return hasil
+
+
+def _catat_interaksi(perangkat_id, kode, soal, tahap, tingkat, jenis, pesan_siswa, hasil):
+    db.simpan_interaksi_ai({
+        "perangkat_id": perangkat_id,
+        "kode_siswa": kode,
+        "soal_id": soal["id"],
+        "fase": hasil["fase"],
+        "tahap": tahap,
+        "tingkat": tingkat,
+        "jenis": jenis,
+        "pesan_siswa": pesan_siswa,
+        "balasan": hasil["teks"],
+        "sumber": hasil["sumber"],
+    })
+
+
+@app.post("/api/bimbing")
+def api_bimbing():
+    """Bantuan bertahap / jawaban pertanyaan siswa dari Pembimbing (tanpa jawaban akhir)."""
+    data = _json_body()
+    perangkat_id, kode = _identitas(data)
+    soal = _soal_untuk_ai(data.get("soal_id"))
+    tahap = data.get("tahap")
+    if tahap not in ai.TUGAS_TAHAP:
+        raise PermintaanSalah("Tahap tidak dikenal.")
+    pertanyaan = _teks_pendek(data, "pertanyaan", ai.MAKS_PERTANYAAN)
+    tingkat = max(1, min(_int_aman(data.get("tingkat"), 3), 3))
+    jawaban_salah = data.get("jawaban_salah")
+    if len(json.dumps(jawaban_salah, ensure_ascii=False)) > 400:
+        jawaban_salah = None
+    pesan_salah = _teks_pendek(data, "pesan_salah", 300) if isinstance(data.get("pesan_salah"), str) else None
+
+    if ai.melewati_batas(perangkat_id, soal["id"]):
+        hasil = {
+            "teks": "Kamu sudah banyak bertanya di soal ini. Coba kerjakan dulu, atau buka pembahasannya, ya.",
+            "sumber": "statis", "fase": ai.fase_dari_tahap(tahap), "catatan": "batas",
+        }
+    else:
+        hasil = ai.bimbing(soal, tahap, tingkat, jawaban_salah, pesan_salah, _riwayat(data), pertanyaan)
+    _catat_interaksi(perangkat_id, kode, soal, tahap, None if pertanyaan else tingkat,
+                     "tanya" if pertanyaan else "petunjuk", pertanyaan, hasil)
+    return jsonify({"teks": hasil["teks"], "sumber": hasil["sumber"], "fase": hasil["fase"],
+                    "ai_aktif": ai.aktif()})
+
+
+@app.post("/api/refleksi")
+def api_refleksi():
+    """Fase Refleksi RMT: siswa menjelaskan alasannya, Pembimbing menanggapi (makna & transendensi)."""
+    data = _json_body()
+    perangkat_id, kode = _identitas(data)
+    soal = _soal_untuk_ai(data.get("soal_id"))
+    alasan = _teks_pendek(data, "alasan", ai.MAKS_ALASAN, wajib=True)
+    jawaban_siswa = data.get("jawaban_fpb")
+    jawaban_siswa = jawaban_siswa if isinstance(jawaban_siswa, int) and not isinstance(jawaban_siswa, bool) else None
+    if ai.melewati_batas(perangkat_id, soal["id"]):
+        hasil = {"teks": "Terima kasih sudah menjelaskan, ya!", "sumber": "statis", "fase": "refleksi", "catatan": "batas"}
+    else:
+        hasil = ai.tanggapi_refleksi(soal, alasan, jawaban_siswa)
+    _catat_interaksi(perangkat_id, kode, soal, "refleksi", None, "refleksi", alasan, hasil)
+    return jsonify({"teks": hasil["teks"], "sumber": hasil["sumber"], "fase": "refleksi"})
 
 
 @app.post("/api/hasil")
