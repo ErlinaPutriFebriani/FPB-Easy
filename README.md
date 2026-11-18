@@ -82,7 +82,8 @@ SQL Editor → New query → tempel isi [supabase/migrasi_002_interaksi_ai.sql](
    GEMINI_API_KEY=kunci-dari-ai-studio
    GEMINI_MODEL=
    ```
-   `GEMINI_MODEL` boleh dikosongkan; aplikasi memakai `gemini-2.5-flash`. Isi nama model lain jika model itu sudah tidak tersedia.
+   **Biarkan `GEMINI_MODEL` kosong.** Aplikasi memakai `gemini-3.5-flash-lite` (cepat, kuota gratis longgar, sudah diuji). Jika model itu suatu saat dihentikan Google, aplikasi otomatis pindah ke `gemini-flash-lite-latest`.
+   > `gemini-2.5-flash` sudah ditutup untuk pengguna baru, dan `gemini-3.8-flash` sering penuh (error 503/429), jadi jangan diisi dengan model tersebut.
 3. Jalankan ulang `python api/index.py`, lalu buka `http://localhost:5000/api/ping`. Hasilnya harus berisi `"ai": "aktif"`.
 4. Di Vercel: **Settings → Environment Variables** → tambahkan `GEMINI_API_KEY` (Production + Preview) → **Redeploy**.
 

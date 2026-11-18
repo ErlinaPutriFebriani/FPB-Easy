@@ -14,6 +14,7 @@ def mode_lokal(monkeypatch):
     monkeypatch.delenv("SUPABASE_URL", raising=False)
     monkeypatch.delenv("SUPABASE_SERVICE_KEY", raising=False)
     monkeypatch.delenv("GEMINI_API_KEY", raising=False)  # test TIDAK PERNAH memanggil Gemini sungguhan
+    monkeypatch.delenv("GEMINI_MODEL", raising=False)
     import ai
     import db
 

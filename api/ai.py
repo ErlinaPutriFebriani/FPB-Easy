@@ -20,7 +20,11 @@ import fpb as alg
 import soal as logika
 
 URL_GEMINI = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
-MODEL_BAWAAN = "gemini-2.5-flash"
+# gemini-3.5-flash-lite: cepat (±2-6 detik) dan kuotanya longgar. Diuji 18 Nov 2026 dengan 12 skenario.
+# (gemini-2.5-flash sudah ditutup untuk pengguna baru; gemini-3.8-flash sering 503/429/timeout.)
+MODEL_BAWAAN = "gemini-3.5-flash-lite"
+# Jika model di atas suatu saat dihentikan (HTTP 404), dipakai alias yang selalu menunjuk model terbaru.
+MODEL_CADANGAN = "gemini-flash-lite-latest"
 BATAS_WAKTU_DETIK = 8
 MAKS_KARAKTER_BALASAN = 320
 MAKS_PERTANYAAN = 150
@@ -85,6 +89,7 @@ TINGKAT = {
 
 SISTEM = """Kamu adalah "Pembimbing", tutor matematika untuk siswa SMP kelas VII-VIII yang belajar FPB di aplikasi FPB Easy.
 Kamu memakai model Rigorous Mathematical Thinking (RMT). Kamu adalah MEDIATOR proses berpikir, bukan pemberi jawaban.
+Istilah: FPB = Faktor Persekutuan Terbesar (huruf T = Terbesar). Faktor persekutuan = faktor yang sama dari dua bilangan atau lebih.
 
 Cara membimbing (RMT):
 - Intensionalitas: arahkan perhatian siswa pada tujuan langkah yang sedang dikerjakan.
@@ -106,6 +111,7 @@ Larangan:
 
 SISTEM_REFLEKSI = """Kamu adalah "Pembimbing", tutor matematika SMP di aplikasi FPB Easy yang memakai model Rigorous Mathematical Thinking (RMT).
 Siswa SUDAH menyelesaikan soal dan sekarang berada di fase Refleksi. Tanggapi alasan yang ia tulis.
+Istilah: FPB = Faktor Persekutuan Terbesar (huruf T = Terbesar). Faktor persekutuan = faktor yang sama dari dua bilangan atau lebih.
 
 Aturan:
 - Paling banyak 3 kalimat pendek, maksimal 50 kata. Bahasa Indonesia sederhana, sapa dengan "kamu". Tanpa markdown dan emoji.
@@ -239,7 +245,23 @@ def bocor(teks, soal):
 
 # ---------------------------------------------------------------- panggilan Gemini
 
+def _pengaturan_berpikir(model):
+    if re.match(r"^gemini-(1|2)\.", model):
+        return {"thinkingBudget": 0}
+    return {"thinkingLevel": "minimal"}
+
+
 def _panggil_gemini(sistem, teks, maks_token=400):
+    try:
+        return _panggil_model(nama_model(), sistem, teks, maks_token)
+    except GagalAI as err:
+        if str(err).startswith("HTTP 404") and nama_model() != MODEL_CADANGAN:
+            print(f"[ai] model {nama_model()} tidak tersedia, memakai {MODEL_CADANGAN}")
+            return _panggil_model(MODEL_CADANGAN, sistem, teks, maks_token)
+        raise
+
+
+def _panggil_model(model, sistem, teks, maks_token):
     import httpx  # impor di sini agar test/ mode tanpa AI tidak perlu jaringan
 
     kunci = os.environ.get("GEMINI_API_KEY", "").strip()
@@ -251,15 +273,17 @@ def _panggil_gemini(sistem, teks, maks_token=400):
         "generationConfig": {
             "temperature": 0.4,
             "maxOutputTokens": maks_token,
-            "thinkingConfig": {"thinkingBudget": 0},  # balasan cepat; tidak perlu "berpikir panjang"
+            # Balasan cepat; tidak perlu "berpikir panjang". Gemini 2.x memakai thinkingBudget,
+            # Gemini 3.x ke atas memakai thinkingLevel (thinkingBudget ditolak dengan HTTP 400).
+            "thinkingConfig": _pengaturan_berpikir(model),
         },
     }
-    url = URL_GEMINI.format(model=nama_model())
+    url = URL_GEMINI.format(model=model)
     kepala = {"x-goog-api-key": kunci, "Content-Type": "application/json"}
     try:
         res = httpx.post(url, json=muatan, headers=kepala, timeout=BATAS_WAKTU_DETIK)
-        if res.status_code == 400 and "thinking" in res.text.lower():
-            # Model tertentu tidak mendukung thinkingConfig -> ulangi tanpa itu.
+        if res.status_code == 400:
+            # Model tertentu tidak mendukung thinkingConfig -> ulangi sekali tanpa itu.
             muatan["generationConfig"].pop("thinkingConfig")
             res = httpx.post(url, json=muatan, headers=kepala, timeout=BATAS_WAKTU_DETIK)
     except httpx.HTTPError as err:

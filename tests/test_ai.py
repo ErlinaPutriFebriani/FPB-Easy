@@ -117,6 +117,49 @@ def test_dengan_gemini(konten, gemini):
     assert "JAWABAN SALAH TERAKHIR SISWA: 2" in kirim["json"]["contents"][0]["parts"][0]["text"]
 
 
+def test_pengaturan_berpikir_per_versi_model(konten, gemini, monkeypatch):
+    s = cari(konten, "langsung-b")
+    ai.bimbing(s, "fpb", 1)
+    assert gemini["terkirim"][-1]["json"]["generationConfig"]["thinkingConfig"] == {"thinkingLevel": "minimal"}
+    monkeypatch.setenv("GEMINI_MODEL", "gemini-2.5-flash")
+    ai.bimbing(s, "fpb", 1)
+    assert gemini["terkirim"][-1]["json"]["generationConfig"]["thinkingConfig"] == {"thinkingBudget": 0}
+
+
+def test_400_diulang_tanpa_thinking(konten, monkeypatch):
+    import httpx
+
+    terkirim = []
+
+    def post(url, json=None, headers=None, timeout=None):
+        terkirim.append(json["generationConfig"].copy())
+        return ResPalsu("Coba lihat lagi faktornya. Mana yang paling besar?", 400 if len(terkirim) == 1 else 200)
+
+    monkeypatch.setenv("GEMINI_API_KEY", "kunci-palsu")
+    monkeypatch.setattr(httpx, "post", post)
+    h = ai.bimbing(cari(konten, "langsung-b"), "fpb", 1)
+    assert h["sumber"] == "ai"
+    assert "thinkingConfig" in terkirim[0] and "thinkingConfig" not in terkirim[1]
+
+
+def test_model_dihentikan_404_pakai_model_cadangan(konten, monkeypatch):
+    import httpx
+
+    url_dipakai = []
+
+    def post(url, json=None, headers=None, timeout=None):
+        url_dipakai.append(url)
+        if ai.MODEL_CADANGAN in url:
+            return ResPalsu("Coba lihat lagi faktornya. Mana yang paling besar?")
+        return ResPalsu("model is no longer available", 404)
+
+    monkeypatch.setenv("GEMINI_API_KEY", "kunci-palsu")
+    monkeypatch.setattr(httpx, "post", post)
+    h = ai.bimbing(cari(konten, "langsung-b"), "fpb", 1)
+    assert h["sumber"] == "ai"
+    assert ai.MODEL_BAWAAN in url_dipakai[0] and ai.MODEL_CADANGAN in url_dipakai[-1]
+
+
 def test_gemini_bocor_diganti_statis(konten, gemini):
     s = cari(konten, "langsung-b")
     gemini["balasan"]["teks"] = "Gampang, FPB-nya adalah 4."
